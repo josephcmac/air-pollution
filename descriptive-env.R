@@ -22,27 +22,32 @@ glimpse(df)
 # daily data
 
 # all data
+png("date-value.png")
 ggplot(df, aes(x=date,y=value)) +
 	geom_point() +
 	theme_classic() +
 	theme(legend.position = "none") +
 	facet_wrap(~location)
+dev.off()
 
 # only zero/non-zero
+png("date-zero-nonzero-value.png")
 ggplot(df, aes(x=date,y=as.numeric(value > 0))) +
 	geom_point() +
 	theme_classic() +
 	theme(legend.position = "none") +
 	facet_wrap(~location)
+dev.off()
 
 # non-zero values
+png("date-nonzero-value.png")
 ggplot(df %>% filter(value > 0), aes(x=date,y=value)) +
 	geom_point() +
 	scale_y_log10() +
 	theme_classic() +
 	theme(legend.position = "none") +
 	facet_wrap(~location)
-
+dev.off()
 
 # yearly data
 
@@ -54,45 +59,44 @@ min_nonzero <- function(x) {
   min(x_nonzero, na.rm = TRUE) 
 }
 
+logit <- function(p) {
+	log(p/(1-p))
+}
 
 df_yearly <- df %>%
   mutate(year = floor_date(date, "year")) %>% 
   group_by(year, location) %>%
-  summarise(p = mean(value > 0),  M = max(value), m = min_nonzero(value), N = length(value), N0 = sum(value > 0), .groups = "drop") %>% 
-  filter(p > 0, M > 0, m > 0)
-
-df_yearly$M <- df_yearly$M**(1/df_yearly$N)
-df_yearly$m <- df_yearly$m**(1/df_yearly$N0) 
+  summarise(alpha = logit(mean(value > 0)), beta = log(min_nonzero(value)),  gamma = log(max(value)), N = length(value), N0 = sum(value > 0), .groups = "drop") 
 
 head(df_yearly)
 
 
-
-# proportion of non-zero values
-ggplot(df_yearly, aes(x=year,y=p)) +
-	geom_point() +
-	geom_line() +
-	scale_y_log10() +
-	theme_classic() +
-	theme(legend.position = "none") +
-	facet_wrap(~location)
-
-# max values
-ggplot(df_yearly, aes(x=year,y=M)) +
+png("location-alpha.png")
+ggplot(df_yearly, aes(x=year,y=alpha)) +
 	geom_point() +
 	geom_line() +
 	theme_classic() +
 	theme(legend.position = "none") +
 	facet_wrap(~location)
+dev.off()
 
-# min nonzero values
-ggplot(df_yearly, aes(x=year,y=m)) +
+png("location-beta.png")
+ggplot(df_yearly, aes(x=year,y=beta)) +
+	geom_point() +
+	geom_line() +
+	theme_classic() +
+	theme(legend.position = "none") +
+	facet_wrap(~location)
+dev.off()
+
+png("location-gamma.png")
+ggplot(df_yearly, aes(x=year,y=gamma)) +
 	geom_point() +
 	geom_line() +	
 	theme_classic() +
 	theme(legend.position = "none") +
 	facet_wrap(~location)
-
+dev.off()
 
 
 
