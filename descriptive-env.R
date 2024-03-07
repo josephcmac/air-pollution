@@ -66,38 +66,61 @@ logit <- function(p) {
 df_yearly <- df %>%
   mutate(year = floor_date(date, "year")) %>% 
   group_by(year, location) %>%
-  summarise(alpha = logit(mean(value > 0)), beta = log(min_nonzero(value)),  gamma = log(max(value)), N = length(value), N0 = sum(value > 0), .groups = "drop") 
+  summarise(alpha = logit(mean(value > 0)), beta = log(min_nonzero(value)),  n = length(value), k = sum(value > 0), .groups = "drop") 
 
-head(df_yearly)
+with(df_yearly, mean((k != 0)&(n != k)))
 
+df_yearly <- df_yearly %>% filter( (k != 0)&(n != k) )
 
-png("location-alpha.png")
+tail(df_yearly)
+summary(df_yearly)
+
+#png("location-alpha.png")
 ggplot(df_yearly, aes(x=year,y=alpha)) +
 	geom_point() +
 	geom_line() +
 	theme_classic() +
 	theme(legend.position = "none") +
 	facet_wrap(~location)
-dev.off()
+#dev.off()
 
-png("location-beta.png")
+#png("location-beta.png")
 ggplot(df_yearly, aes(x=year,y=beta)) +
 	geom_point() +
 	geom_line() +
 	theme_classic() +
 	theme(legend.position = "none") +
 	facet_wrap(~location)
-dev.off()
+#dev.off()
+
+
+
+ggplot(df_yearly, aes(n)) +
+	geom_density() +
+	theme_classic() +
+	facet_wrap(~location)
+
+
+
+
+
+df_yearly <- df %>%
+  mutate(year = floor_date(date, "year")) %>% 
+  group_by(year, location) %>%
+  summarise(gamma = log(max(sample(value, size=50, replace=TRUE))), n=length(value), .groups = "drop") %>%
+  filter(n >= 50, is.finite(gamma)) %>%
+  select(-n)
+
+glimpse(df_yearly)
+summary(df_yearly)
+nrow(df_yearly)
+
 
 png("location-gamma.png")
 ggplot(df_yearly, aes(x=year,y=gamma)) +
-	geom_point() +
-	geom_line() +	
+	geom_point(color="gray") +
+	geom_smooth(method=MASS::rlm, color="black") +	
 	theme_classic() +
 	theme(legend.position = "none") +
 	facet_wrap(~location)
 dev.off()
-
-
-
-
