@@ -1,126 +1,144 @@
 library(tidyverse)
 
-read_year <- function(parameter, year) {
+# Reading
+read_year <- function(year, parameter, sample_duration) {
 	read.csv(paste0("../../datasets/daily_HAPS/daily_HAPS_",year,".csv")) %>%
-		filter(Parameter.Name == parameter) %>%
-		mutate(Parameter.Name = ifelse(Parameter.Name == "District Of Columbia",
-            		"District of Columbia", Parameter.Name)) %>%
+		filter(Parameter.Name == parameter, Sample.Duration == sample_duration) %>%
 		filter(!(State.Name %in% c("Country Of Mexico", "Puerto Rico", "Virgin Islands"))) %>%
-	    	select(Date.Local, State.Name, Arithmetic.Mean) %>%
+		mutate(State.Name = ifelse(State.Name == "District Of Columbia",
+            		"District of Columbia", State.Name)) %>%
+	    	select(Date.Local, State.Name, X1st.Max.Value) %>%
     		mutate(Date.Local = as.Date(Date.Local)) %>%
     		group_by(Date.Local, State.Name) %>%
-    		summarise(value = median(Arithmetic.Mean), .groups = "drop") %>%
+    		summarise(value = ifelse(length(X1st.Max.Value) > 0, max(X1st.Max.Value), NA), .groups = "drop") %>%
 		rename(date = Date.Local, location = State.Name)
 }
 
-df <- map_df(1980:2019, ~ read_year("Arsenic PM2.5 LC", .x)) %>% 
+min_nonzero <- function(x) {
+  x_nonzero <- x[x > 0]
+  if (length(x_nonzero) == 0) {
+    return(NA) 
+  }
+  min(x_nonzero) 
+}
+
+max_nonzero <- function(x) {
+  x_nonzero <- x[x > 0]
+  if (length(x_nonzero) == 0) {
+    return(NA) 
+  }
+  max(x_nonzero) 
+}
+
+df <- map_df(1988:2019, ~ read_year(.x, parameter="Arsenic PM2.5 LC", sample_duration="24 HOUR")) %>% 
 	mutate(location = as.factor(location))
 
+df_yearly <- df %>%
+  mutate(year = floor_date(date, "year") %>% year) %>% 
+  group_by(year, location) %>%
+  summarise(positive_proportion=mean(value>0), min_nonzero=min_nonzero(value), max_nonzero=max_nonzero(value), .groups = "drop") 
+
+# Overview
+# Overview (daily)
 glimpse(df)
 
+nrow(df)
 
-# daily data
+length(unique(df$location))
 
-# all data
-png("date-value.png")
+length(unique(df$date))
+
+summary(df)
+
+mean( df$value > 0 )
+
+ggplot(df, aes(value)) + 
+	geom_histogram(bins = 100) +
+	theme_classic()
+
+ggplot(df %>% filter(value > 0), aes(value)) + 
+	scale_x_log10() +
+	geom_density() +
+	theme_classic()
+
+# Overview (yearly)
+nrow(df_yearly)
+
+summary(df_yearly)
+
+ggplot(df_yearly, aes(positive_proportion)) + 
+	geom_density() + 
+	theme_classic()
+
+ggplot(df_yearly, aes(min_nonzero)) + 
+	geom_density() + 
+	scale_x_log10() +
+	theme_classic()
+
+ggplot(df_yearly, aes(max_nonzero)) + 
+	geom_density() + 
+	scale_x_log10() +
+	theme_classic()
+
+# Longitudinal
+# Longitudinal (daily)
 ggplot(df, aes(x=date,y=value)) +
 	geom_point() +
 	theme_classic() +
 	theme(legend.position = "none") +
 	facet_wrap(~location)
-dev.off()
 
-# only zero/non-zero
-png("date-zero-nonzero-value.png")
-ggplot(df, aes(x=date,y=as.numeric(value > 0))) +
-	geom_point() +
-	theme_classic() +
-	theme(legend.position = "none") +
-	facet_wrap(~location)
-dev.off()
-
-# non-zero values
-png("date-nonzero-value.png")
 ggplot(df %>% filter(value > 0), aes(x=date,y=value)) +
 	geom_point() +
 	scale_y_log10() +
 	theme_classic() +
 	theme(legend.position = "none") +
 	facet_wrap(~location)
-dev.off()
 
-# yearly data
-
-min_nonzero <- function(x) {
-  x_nonzero <- x[x > 0]
-  if (length(x_nonzero) == 0) {
-    return(0) 
-  }
-  min(x_nonzero, na.rm = TRUE) 
-}
-
-logit <- function(p) {
-	log(p/(1-p))
-}
-
-df_yearly <- df %>%
-  mutate(year = floor_date(date, "year")) %>% 
-  group_by(year, location) %>%
-  summarise(alpha = logit(mean(value > 0)), beta = log(min_nonzero(value)),  n = length(value), k = sum(value > 0), .groups = "drop") 
-
-with(df_yearly, mean((k != 0)&(n != k)))
-
-df_yearly <- df_yearly %>% filter( (k != 0)&(n != k) )
-
-tail(df_yearly)
-summary(df_yearly)
-
-#png("location-alpha.png")
-ggplot(df_yearly, aes(x=year,y=alpha)) +
-	geom_point() +
-	geom_line() +
-	theme_classic() +
-	theme(legend.position = "none") +
-	facet_wrap(~location)
-#dev.off()
-
-#png("location-beta.png")
-ggplot(df_yearly, aes(x=year,y=beta)) +
-	geom_point() +
-	geom_line() +
-	theme_classic() +
-	theme(legend.position = "none") +
-	facet_wrap(~location)
-#dev.off()
-
-
-
-ggplot(df_yearly, aes(n)) +
-	geom_density() +
-	theme_classic() +
-	facet_wrap(~location)
-
-
-
-
-
-df_yearly <- df %>%
-  mutate(year = floor_date(date, "year")) %>% 
-  group_by(year, location) %>%
-  summarise(gamma = log(max(sample(value, size=50, replace=TRUE))), n=length(value), .groups = "drop") %>%
-  filter(n >= 50, is.finite(gamma)) %>%
-  select(-n)
-
-glimpse(df_yearly)
-summary(df_yearly)
-nrow(df_yearly)
-
-
-png("location-gamma.png")
-ggplot(df_yearly, aes(x=year,y=gamma)) +
+# Longitudinal (yearly)
+ggplot(df_yearly, aes(year, positive_proportion)) + 
 	geom_point(color="gray") +
-	geom_smooth(method=MASS::rlm, color="black") +	
+       	geom_smooth(color="black") +	
 	theme_classic() +
-	theme(legend.position = "none") +
 	facet_wrap(~location)
-dev.off()
+
+ggplot(df_yearly %>% filter(!is.na(max_nonzero))) + 
+	geom_point(color="gray", aes(year, max_nonzero)) +
+       	geom_smooth(color="black", method="loess", formula = "y ~ x", aes(year, max_nonzero)) +
+	geom_point(color="gray", aes(year, min_nonzero)) +
+       	geom_smooth(color="black", method="loess", formula = "y ~ x", aes(year, min_nonzero)) +	
+	scale_y_log10() +	
+	theme_classic() +
+	ylab("value") +
+	facet_wrap(~location)
+
+# Cross-sectional
+ggplot(df %>% filter(year(date) == 2000)) +
+	geom_boxplot(aes(location, value)) +
+	coord_flip() +
+	theme_classic()
+
+ggplot(df %>% filter(value > 0, year(date) == 2000)) +
+	geom_boxplot(aes(location, value)) +
+	scale_y_log10() +
+	coord_flip() +
+	theme_classic()
+
+ggplot(df_yearly) +
+       geom_density(aes(positive_proportion)) +
+       theme_classic() +
+       facet_wrap(~year)
+
+ggplot(df_yearly %>% filter(!is.na(min_nonzero))) +
+       geom_density(aes(min_nonzero)) +
+       scale_x_log10() +
+       theme_classic() +
+       facet_wrap(~year)
+
+ggplot(df_yearly %>% filter(!is.na(max_nonzero))) +
+       geom_density(aes(max_nonzero)) +
+       scale_x_log10() +
+       theme_classic() +
+       facet_wrap(~year)
+
+
