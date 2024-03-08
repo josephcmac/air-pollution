@@ -22,6 +22,14 @@ min_nonzero <- function(x) {
   min(x_nonzero) 
 }
 
+median_nonzero <- function(x) {
+  x_nonzero <- x[x > 0]
+  if (length(x_nonzero) == 0) {
+    return(NA) 
+  }
+  median(x_nonzero) 
+}
+
 max_nonzero <- function(x) {
   x_nonzero <- x[x > 0]
   if (length(x_nonzero) == 0) {
@@ -36,7 +44,7 @@ df <- map_df(1988:2019, ~ read_year(.x, parameter="Arsenic PM2.5 LC", sample_dur
 df_yearly <- df %>%
   mutate(year = floor_date(date, "year") %>% year) %>% 
   group_by(year, location) %>%
-  summarise(positive_proportion=mean(value>0), min_nonzero=min_nonzero(value), max_nonzero=max_nonzero(value), .groups = "drop") 
+  summarise(positive_proportion=mean(value>0), min_nonzero=min_nonzero(value), median_nonzero=median_nonzero(value), max_nonzero=max_nonzero(value), .groups = "drop") 
 
 # Overview
 # Overview (daily)
@@ -104,12 +112,14 @@ ggplot(df_yearly, aes(year, positive_proportion)) +
 
 ggplot(df_yearly %>% filter(!is.na(max_nonzero))) + 
 	geom_point(color="gray", aes(year, max_nonzero)) +
+	geom_point(color="gray", aes(year, median_nonzero)) +
+       	geom_point(color="gray", aes(year, min_nonzero)) +
        	geom_smooth(color="black", method="loess", formula = "y ~ x", aes(year, max_nonzero)) +
-	geom_point(color="gray", aes(year, min_nonzero)) +
+	geom_smooth(color="black", method="loess", formula = "y ~ x", aes(year, median_nonzero)) +
        	geom_smooth(color="black", method="loess", formula = "y ~ x", aes(year, min_nonzero)) +	
 	scale_y_log10() +	
 	theme_classic() +
-	ylab("value") +
+	ylab("value") + 
 	facet_wrap(~location)
 
 # Cross-sectional
