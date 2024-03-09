@@ -111,51 +111,130 @@ dev.off()
 
 
 # Longitudinal (yearly)
+png("arsenic_pm25_lc_region_positive_proportion.png", width = 3000, height = 3000, res = 300)
 ggplot(df_yearly, aes(year, positive_proportion)) + 
 	geom_point(color="gray") +
-       	geom_smooth(color="black") +	
+       	geom_smooth(color="black", method = "loess", formula = "y ~ x") +
+	labs(title = "Série chronologique de proportion de valeurs positives",
+	     x = "Année",
+	     y = "Proportion de valeurs positives") +
 	theme_classic() +
-	facet_wrap(~location)
+	facet_wrap(~location, ncol = 5)
+dev.off()
 
-ggplot(df_yearly %>% filter(!is.na(max_nonzero))) + 
-	geom_point(color="gray", aes(year, max_nonzero)) +
-	geom_point(color="gray", aes(year, median_nonzero)) +
-       	geom_point(color="gray", aes(year, min_nonzero)) +
-       	geom_smooth(color="black", method="loess", formula = "y ~ x", aes(year, max_nonzero)) +
-	geom_smooth(color="black", method="loess", formula = "y ~ x", aes(year, median_nonzero)) +
-       	geom_smooth(color="black", method="loess", formula = "y ~ x", aes(year, min_nonzero)) +	
-	scale_y_log10() +	
-	theme_classic() +
-	ylab("value") + 
-	facet_wrap(~location)
+
 
 # Cross-sectional
-ggplot(df %>% filter(year(date) == 2000)) +
-	geom_boxplot(aes(location, value)) +
-	coord_flip() +
-	theme_classic()
+png("arsenic_pm25_lc_region_nonzero_density_1990.png", width = 3000, height = 3000, res = 300)
+ggplot(df %>% filter(value > 0, year(date) == 1990), aes(x=value)) +
+	geom_density() +
+	scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = exp_label) +
+	labs(	title = "Densité des valeurs non nulles pour la concentration quotidienne d'arsenic PM2,5 LC",
+		subtitle = "Année 1990",
+		x = "Concentration d'arsenic (µg/m³) - Valeurs non nulles",
+		y = "Densité") +
+	theme_classic() +
+	facet_wrap(~location, ncol = 5)
+dev.off()
 
-ggplot(df %>% filter(value > 0, year(date) == 2000)) +
-	geom_boxplot(aes(location, value)) +
-	scale_y_log10() +
-	coord_flip() +
-	theme_classic()
+png("arsenic_pm25_lc_region_nonzero_density_1995.png", width = 3000, height = 3000, res = 300)
+ggplot(df %>% filter(value > 0, year(date) == 1995), aes(x=value)) +
+	geom_density() +
+	scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = exp_label) +
+	labs(	title = "Densité des valeurs non nulles pour la concentration quotidienne d'arsenic PM2,5 LC",
+		subtitle = "Année 1995",
+		x = "Concentration d'arsenic (µg/m³) - Valeurs non nulles",
+		y = "Densité") +
+	theme_classic() +
+	facet_wrap(~location, ncol = 5)
+dev.off()
 
+png("arsenic_pm25_lc_region_nonzero_density_2000.png", width = 3000, height = 3000, res = 300)
+ggplot(df %>% filter(value > 0, year(date) == 2000), aes(x=value)) +
+	geom_density() +
+	scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = exp_label) +
+	labs(	title = "Densité des valeurs non nulles pour la concentration quotidienne d'arsenic PM2,5 LC",
+		subtitle = "Année 2000",
+		x = "Concentration d'arsenic (µg/m³) - Valeurs non nulles",
+		y = "Densité") +
+	theme_classic() +
+	facet_wrap(~location, ncol = 5)
+dev.off()
+
+
+png("arsenic_pm25_lc_region_nonzero_density_2005.png", width = 3000, height = 3000, res = 300)
+ggplot(df %>% filter(value > 0, year(date) == 2005), aes(x=value)) +
+	geom_density() +
+	scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = exp_label) +
+	labs(	title = "Densité des valeurs non nulles pour la concentration quotidienne d'arsenic PM2,5 LC",
+		subtitle = "Année 2005",
+		x = "Concentration d'arsenic (µg/m³) - Valeurs non nulles",
+		y = "Densité") +
+	theme_classic() +
+	facet_wrap(~location, ncol = 5)
+dev.off()
+
+
+png("arsenic_pm25_lc_region_nonzero_density_2010.png", width = 3000, height = 3000, res = 300)
+ggplot(df %>% filter(value > 0, year(date) == 2010), aes(x=value)) +
+	geom_density() +
+	scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = exp_label) +
+	labs(	title = "Densité des valeurs non nulles pour la concentration quotidienne d'arsenic PM2,5 LC",
+		subtitle = "Année 2010",
+		x = "Concentration d'arsenic (µg/m³) - Valeurs non nulles",
+		y = "Densité") +
+	theme_classic() +
+	facet_wrap(~location, ncol = 5)
+dev.off()
+
+png("arsenic_pm25_lc_region_nonzero_density_2015.png", width = 3000, height = 3000, res = 300)
+ggplot(df %>% filter(value > 0, year(date) == 2015), aes(x=value)) +
+	geom_density() +
+	scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = exp_label) +
+	labs(	title = "Densité des valeurs non nulles pour la concentration quotidienne d'arsenic PM2,5 LC",
+		subtitle = "Année 2015",
+		x = "Concentration d'arsenic (µg/m³) - Valeurs non nulles",
+		y = "Densité") +
+	theme_classic() +
+	facet_wrap(~location, ncol = 5)
+dev.off()
+
+
+png("arsenic_pm25_lc_year_positive.png", width = 3000, height = 3000, res = 300)
 ggplot(df_yearly) +
-       geom_density(aes(positive_proportion)) +
+       geom_density(aes(positive_proportion)) + 
+	labs(	title = "Densité des proportions des valeurs positives de la concentration d'arsenic PM2,5 LC",
+		subtitle = "Stratification par année",
+		x = "Proportion des valeurs positives",
+		y = "Densité") +
        theme_classic() +
        facet_wrap(~year)
+dev.off()
 
-ggplot(df_yearly %>% filter(!is.na(min_nonzero))) +
-       geom_density(aes(min_nonzero)) +
-       scale_x_log10() +
-       theme_classic() +
-       facet_wrap(~year)
 
-ggplot(df_yearly %>% filter(!is.na(max_nonzero))) +
-       geom_density(aes(max_nonzero)) +
-       scale_x_log10() +
-       theme_classic() +
-       facet_wrap(~year)
+png("arsenic_pm25_lc_min_nonzero.png", width = 3000, height = 4000, res = 300)
+ggplot(df_yearly %>% filter(! is.na(min_nonzero)  )) +
+geom_density(aes(min_nonzero)) +
+scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = exp_label) +
+labs(	title = "Densité des minimums des valeurs positifs annuels de la concentration d'arsenic PM2,5 LC",
+	subtitle = "Stratification par année",
+	x = "Minimums des valeurs positives annuels",
+	y = "Densité") +
+theme_classic() +
+facet_wrap(~year, ncol = 4)
+dev.off()
+
+
+png("arsenic_pm25_lc_max_nonzero.png", width = 3000, height = 4000, res = 300)
+ggplot(df_yearly %>% filter(! is.na(max_nonzero)  )) +
+geom_density(aes(max_nonzero)) +
+scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = exp_label) +
+labs(	title = "Densité des maximums des valeurs positives  annuels de la concentration d'arsenic PM2,5 LC",
+	subtitle = "Stratification par année",
+	x = "Maximums des valeurs positives annuels",
+	y = "Densité") +
+theme_classic() +
+facet_wrap(~year, ncol=4)
+dev.off()
 
 
