@@ -12,6 +12,7 @@ read_year <- function(year, parameter, sample_duration) {
     		mutate(Date.Local = as.Date(Date.Local)) %>%
     		group_by(Date.Local, State.Name) %>%
     		summarise(value = ifelse(length(X1st.Max.Value) > 0, max(X1st.Max.Value), NA), .groups = "drop") %>%
+		mutate(value = sapply(value, function(x) max(x,0))) %>%
 		rename(date = Date.Local, location = State.Name)
 }
 
@@ -44,17 +45,13 @@ exp_label <- function(x) {
 }
 
 
+########################
+# Microscopic Analysis #
+########################
+
 # Reading
 df <- map_df(1988:2023, ~ read_year(.x, parameter="Arsenic PM2.5 LC", sample_duration="24 HOUR")) %>% 
 	mutate(location = as.factor(location))
-
-df_yearly <- df %>%
-  mutate(year = floor_date(date, "year") %>% year) %>% 
-  group_by(year, location) %>%
-  summarise(positive_proportion=mean(value>0), 
-	    min_nonzero=min_nonzero(value), 
-	    geom_mean_nonzero=geom_mean_nonzero(value), 
-	    max_nonzero=max_nonzero(value), .groups = "drop") 
 
 # Overview
 glimpse(df)
@@ -69,9 +66,7 @@ summary(df)
 
 (mean( df$value > 0 )*100) %>% round(0)
 
-summary(df_yearly)
-
-# Longitudinal study (microscopic)
+# Longitudinal study 
 df %>% 
 	mutate(year = floor_date(date, "year") %>% year %>% sapply(function(x) 10*round(x/10))) %>%
 	filter(value > 0) %>%
@@ -84,8 +79,47 @@ df %>%
 	theme_classic() +
 	facet_wrap(~location, ncol=6)
 
+df %>% 
+	ggplot(aes(x=date, y=value))   +
+	geom_smooth(color="black", method = 'gam', formula = y ~ s(x, bs = "cs")) +
+	labs(title = "Concentration (lissée) d'arsenic PM2,5 LC",
+	     x = "Année",
+	     y = "Valeurs") +
+	theme_classic() +
+	facet_wrap(~location, ncol=6)
 
-# Longitudinal study (macroscopic)
+
+df %>% 
+	filter(value > 0) %>%
+	ggplot(aes(x=date, y=value))   +
+	geom_smooth(color="black", method = 'gam', formula = y ~ s(x, bs = "cs")) +
+	labs(title = "Concentration (lissée) des valeurs positives d'arsenic PM2,5 LC",
+	     x = "Année",
+	     y = "Valeurs Positives") +
+	scale_y_log10(breaks = trans_breaks("log10", function(y) 10^y), labels = exp_label) +
+	theme_classic() +
+	facet_wrap(~location, ncol=6)
+
+
+########################
+# Macroscopic Analysis #
+########################
+
+df_yearly <- df %>%
+  mutate(year = floor_date(date, "year") %>% year) %>% 
+  group_by(year, location) %>%
+  summarise(positive_proportion=mean(value>0), 
+	    min_nonzero=min_nonzero(value), 
+	    geom_mean_nonzero=geom_mean_nonzero(value), 
+	    max_nonzero=max_nonzero(value), .groups = "drop") 
+rm(df)
+gc(df)
+
+
+summary(df_yearly)
+
+
+# Longitudinal study
 
 ggplot(df_yearly, aes(year, positive_proportion)) + 
 	geom_point(color="gray") +
