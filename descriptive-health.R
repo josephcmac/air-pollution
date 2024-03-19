@@ -42,6 +42,16 @@ map_df(filenames, ~ read_file(.x)) %>%
   mutate(age = age %>% fix_age %>% as.integer, sex = as.factor(sex), location = as.factor(location))
 }
 
+exp_label <- function(x) {
+  parse(text = sprintf("10^%s", as.character(log10(x))))
+}
+
+male_female_separation <- function(df) {
+  df_Male <- df %>% filter(sex=="Male") %>% select(-sex) %>% rename(Male = incidence)
+  df_Female <- df %>% filter(sex=="Female") %>% select(-sex) %>% rename(Female = incidence)
+  return(merge(df_Male, df_Female))
+}
+
 
 filenames <- c("IHME-GBD_2019_DATA-5fcc42dd-1", "IHME-GBD_2019_DATA-28e7f8dc-1", "IHME-GBD_2019_DATA-77ebed24-1", "IHME-GBD_2019_DATA-610d44b5-1", "IHME-GBD_2019_DATA-a0e15397-1", "IHME-GBD_2019_DATA-c8d94d50-1", "IHME-GBD_2019_DATA-d0cb166f-1")
 
@@ -49,6 +59,55 @@ filenames <- c("IHME-GBD_2019_DATA-5fcc42dd-1", "IHME-GBD_2019_DATA-28e7f8dc-1",
 df <- read_files(filenames)
 
 df %>% glimpse
+
+df %>% summary
+
+df %>% 
+  filter(age==5) %>%
+  ggplot(aes(x=year, y=incidence, color=sex)) + 
+  geom_point() +
+  geom_line() + 
+  scale_y_log10(breaks = scales::trans_breaks("log10", function(y) 10^y), labels = exp_label) +
+  theme_classic() +
+  facet_wrap(~location, ncol=6, scales = "fixed") +
+  theme(panel.spacing = unit(1, "lines"), axis.text.x = element_text(size = 6)) 
+
+
+df_sex <- male_female_separation(df)
+
+df_sex %>% head
+
+x_min <- min(c(df_sex$Male, df_sex$Female))
+x_max <- max(c(df_sex$Male, df_sex$Female))
+
+df_sex %>% 
+  ggplot(aes(x=Male, y=Female)) + 
+  geom_point(alpha=0.1) +
+  geom_abline(intercept = 0, slope = 1, linetype="dashed", color = "gray") + 
+  scale_x_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), labels = exp_label) +
+  scale_y_log10(breaks = scales::trans_breaks("log10", function(y) 10^y), labels = exp_label) +
+  theme_classic() + 
+  coord_fixed(ratio=1, xlim=c(x_min, x_max), ylim=c(x_min, x_max))
+
+df_sex %>% 
+  ggplot(aes(x=Male, y=Female, color=location)) + 
+  geom_point(alpha=0.1) +
+  geom_abline(intercept = 0, slope = 1, linetype="dashed", color = "gray") + 
+  scale_x_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), labels = exp_label) +
+  scale_y_log10(breaks = scales::trans_breaks("log10", function(y) 10^y), labels = exp_label) +
+  theme_classic() + 
+  theme(legend.position="") +
+  coord_fixed(ratio=1, xlim=c(x_min, x_max), ylim=c(x_min, x_max))
+
+df_sex %>% 
+  ggplot(aes(x=Male, y=Female, color=age)) + 
+  geom_point(alpha=0.1) +
+  geom_abline(intercept = 0, slope = 1, linetype="dashed", color = "gray") + 
+  scale_x_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), labels = exp_label) +
+  scale_y_log10(breaks = scales::trans_breaks("log10", function(y) 10^y), labels = exp_label) +
+  theme_classic() + 
+  coord_fixed(ratio=1, xlim=c(x_min, x_max), ylim=c(x_min, x_max))
+
 
 
 
