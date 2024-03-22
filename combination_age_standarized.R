@@ -61,57 +61,72 @@ male_female_separation <- function(df) {
   return(merge(df_Male, df_Female))
 }
 
-
-latency <- 3
-df_env <- map_df(1988:(2019-latency), ~ read_year(.x, parameter="Arsenic PM2.5 LC", sample_duration="24 HOUR")) %>% 
+read_combination<- function(latency) {
+  df_env <- map_df(1988:(2019-latency), ~ read_year(.x, parameter="Arsenic PM2.5 LC", sample_duration="24 HOUR")) %>% 
         mutate(location = as.factor(location))
 
-df_env_yearly <- df_env %>%
-  mutate(year = floor_date(date, "year") %>% year) %>% 
-  group_by(year, location) %>%
-  summarise(positive_proportion=mean(value>0), 
+  df_env_yearly <- df_env %>%
+    mutate(year = floor_date(date, "year") %>% year) %>% 
+    group_by(year, location) %>%
+    summarise(positive_proportion=mean(value>0), 
             min_nonzero=min_nonzero(value), 
             geom_mean_nonzero=geom_mean_nonzero(value), 
             max_nonzero=max_nonzero(value), .groups = "drop") 
-rm(df_env)
-gc()
+  rm(df_env)
+  gc()
 
-df_env_yearly <- df_env_yearly %>% na.omit()
-df_env_yearly$year <- df_env_yearly$year + 1 
+  df_env_yearly$year <- df_env_yearly$year + latency 
 
-df_health <- read_file_health("IHME-GBD_2019_DATA-5fcc42dd-1")
+  df_health <- read_file_health("IHME-GBD_2019_DATA-5fcc42dd-1")
 
-df_health <- male_female_separation(df_health)
+  df_health <- male_female_separation(df_health)
 
-df <- merge(df_env_yearly, df_health)
+  df <- merge(df_env_yearly, df_health)
 
-rm(df_env_yearly, df_health)
-gc()
+  rm(df_env_yearly, df_health)
+  gc()
 
+  return(df)
+}
 
-ggplot(df,aes(x=geom_mean_nonzero, y=Female)) +
-	geom_point() +
-	scale_x_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), labels = exp_label) +
-	scale_y_log10(breaks = scales::trans_breaks("log10", function(y) 10^y), labels = exp_label) +
-	theme_classic()
+df <- read_combination(3)
 
-ggplot(df,aes(x=min_nonzero, y=Female)) +
-	geom_point() +
-	scale_x_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), labels = exp_label) +
-	scale_y_log10(breaks = scales::trans_breaks("log10", function(y) 10^y), labels = exp_label) +
-	theme_classic()
+ggplot(df %>% na.omit(), aes(x=geom_mean_nonzero, y=Female)) +
+  geom_point(color="gray", alpha=0.5) +
+  geom_smooth(color="black", method='gam', formula=y~s(x, bs="cs")) +
+  scale_x_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), labels = exp_label) +
+  scale_y_log10(breaks = scales::trans_breaks("log10", function(y) 10^y), labels = exp_label) +
+  labs(title = "Moyenne géométrique non nulle vs Incidence chez les femmes",
+       x = "Moyenne géométrique non nulle",
+       y = "Incidence chez les femmes") +
+  theme_classic()
 
-ggplot(df,aes(x=max_nonzero, y=Female)) +
-	geom_point() +
-	scale_x_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), labels = exp_label) +
-	scale_y_log10(breaks = scales::trans_breaks("log10", function(y) 10^y), labels = exp_label) +
-	theme_classic()
+ggplot(df %>% na.omit(), aes(x=min_nonzero, y=Female)) +
+  geom_point(color="gray", alpha=0.5) +
+  geom_smooth(color="black", method='gam', formula=y~s(x, bs="cs")) +
+  scale_x_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), labels = exp_label) +
+  scale_y_log10(breaks = scales::trans_breaks("log10", function(y) 10^y), labels = exp_label) +
+  labs(title = "Minimum non nul vs Incidence chez les femmes",
+       x = "Minimum non nul",
+       y = "Incidence chez les femmes") +
+  theme_classic()
 
+ggplot(df %>% na.omit(), aes(x=max_nonzero, y=Female)) +
+  geom_point(color="gray", alpha=0.5) +
+  geom_smooth(color="black", method='gam', formula=y~s(x, bs="cs")) +
+  scale_x_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), labels = exp_label) +
+  scale_y_log10(breaks = scales::trans_breaks("log10", function(y) 10^y), labels = exp_label) +
+  labs(title = "Maximum non nul vs Incidence chez les femmes",
+       x = "Maximum non nul",
+       y = "Incidence chez les femmes") +
+  theme_classic()
 
-
-ggplot(df,aes(x=positive_proportion, y=Female)) +
-	geom_point() +
-	scale_y_log10(breaks = scales::trans_breaks("log10", function(y) 10^y), labels = exp_label) +
-	theme_classic()
-
+ggplot(df, aes(x=positive_proportion, y=Female)) +
+  geom_point(color="gray", alpha=0.5) +
+  geom_smooth(color="black", method='gam', formula=y~s(x, bs="cs")) +
+  scale_y_log10(breaks = scales::trans_breaks("log10", function(y) 10^y), labels = exp_label) +
+  labs(title = "Proportion positive vs Incidence chez les femmes",
+       x = "Proportion positive",
+       y = "Incidence chez les femmes") +
+  theme_classic()
 
