@@ -103,18 +103,7 @@ compute_p <- function(df) {
   data.frame(year = years, p_value = sapply(years, function(year) comp_p(df, year)))
 }
 
-df <- read_combination(3)
-
-p_values <- compute_p(df)
-
-ggplot(p_values, aes(x=year, y=logit(p_value))) +
-  geom_point(color="gray") +
-  geom_smooth(color="black", method = lm, formula=y~splines::bs(x, 3)) +
-  geom_hline(yintercept = log(0.05/(0.95)), linetype = "dashed", color="lightgray") +
-  theme_classic()
-
-
-visualize_median <- function(df, p_values, column_name) {
+visualize_median <- function(df, p_values, column_name, title_lab, x_lab, y_lab) {
   col_sym <- rlang::ensym(column_name)
   df_median <- df %>% 
     na.omit() %>%
@@ -127,13 +116,42 @@ visualize_median <- function(df, p_values, column_name) {
     geom_point(color="gray") +
     geom_smooth(color="black", method = MASS::rlm, formula=y~x) +
     geom_hline(yintercept = log(0.05/(0.95)), linetype = "dashed", color="black") +
+    labs(title=title_lab) +
+    xlab(x_lab) +
+    ylab(y_lab) +
     theme_classic()
 }
 
-visualize_median(df, p_values, "positive_proportion")
-visualize_median(df, p_values, "min_nonzero")
-visualize_median(df, p_values, "max_nonzero")
-visualize_median(df, p_values, "geom_mean_nonzero")
+
+df <- read_combination(3)
+
+p_values <- compute_p(df)
 
 
+visualize_median(df, p_values, "positive_proportion", 
+                   "p-valeurs vs Proportion de valeurs positives", 
+                   "Log-cotes de la proportion positive",
+                   "Log-cotes des p-valeurs")
+
+visualize_median(df, p_values, "min_nonzero", 
+                   "p-valeurs vs Minimum non nul", 
+                   "Log-cotes du minimum non nul",
+                   "Log-cotes des p-valeurs")
+
+visualize_median(df, p_values, "max_nonzero", 
+                   "p-valeurs vs Maximum non nul", 
+                   "Log-cotes du maximum non nul",
+                   "Log-cotes des p-valeurs")
+
+visualize_median(df, p_values, "geom_mean_nonzero", 
+                   "p-valeurs vs Moyenne géométrique non nulle", 
+                   "Log-cotes de la moyenne géométrique non nulle",
+                   "Log-cotes des p-valeurs")
+
+ggplot(p_values, aes(x=year, y=logit(p_value))) +
+  geom_point(color="gray") +
+  geom_smooth(color="black", method = MASS::rlm, formula=y~splines::bs(x, 3)) +
+  geom_hline(yintercept = log(0.05/(0.95)), linetype = "dashed", color="black") +
+  labs(title="Série chronologique des p-valeurs", x="Année", y="Logit des p-valeurs") +
+  theme_classic()
 
