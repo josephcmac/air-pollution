@@ -89,6 +89,10 @@ read_combination<- function(latency) {
   return(df)
 }
 
+odds <- function(x) {
+  x/(1-x)
+}
+
 logit <- function(x) {
   log(x/(1-x))
 }
@@ -103,7 +107,8 @@ compute_p <- function(df) {
   data.frame(year = years, p_value = sapply(years, function(year) comp_p(df, year)))
 }
 
-visualize_median <- function(df, p_values, column_name, title_lab, x_lab, y_lab) {
+
+visualize_median <- function(df, p_values, column_name, title_lab, subtitle_lab, x_lab, y_lab, caption_lab) {
   col_sym <- rlang::ensym(column_name)
   df_median <- df %>% 
     na.omit() %>%
@@ -112,46 +117,72 @@ visualize_median <- function(df, p_values, column_name, title_lab, x_lab, y_lab)
 
   df_median <- merge(df_median, p_values)
 
-  ggplot(df_median, aes(x=logit(value), y=logit(p_value))) +
+  ggplot(df_median, aes(x=odds(value), y=odds(p_value))) +
     geom_point(color="gray") +
     geom_smooth(color="black", method = MASS::rlm, formula=y~x) +
-    geom_hline(yintercept = log(0.05/(0.95)), linetype = "dashed", color="black") +
-    labs(title=title_lab) +
+    scale_x_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), labels = exp_label) + 
+    scale_y_log10(breaks = scales::trans_breaks("log10", function(y) 10^y), labels = exp_label) + 
+    geom_hline(yintercept = 0.05, linetype = "dashed", color="black") +
+    labs(title=title_lab, subtitle=subtitle_lab, caption=caption_lab) +
     xlab(x_lab) +
     ylab(y_lab) +
     theme_classic()
 }
 
 
-df <- read_combination(3)
+df <- read_combination(6)
 
 p_values <- compute_p(df)
 
-
+png("images/correlation_positive_proportion_latency_6.png")
 visualize_median(df, p_values, "positive_proportion", 
-                   "p-valeurs vs Proportion de valeurs positives", 
-                   "Log-cotes de la proportion positive",
-                   "Log-cotes des p-valeurs")
+                   "p-valeurs vs Proportion de valeurs positives",
+                   "Période de latence : 6 ans",
+                   "Cotes de la proportion positive",
+                   "Cotes des p-valeurs", 
+                   "Source : IHME, Global Burden of Disease (2019); U.S. Environmental Protection Agency (2023)")
+dev.off()
 
+png("images/correlation_min_positive_latency_6.png")
 visualize_median(df, p_values, "min_nonzero", 
-                   "p-valeurs vs Minimum non nul", 
-                   "Log-cotes du minimum non nul",
-                   "Log-cotes des p-valeurs")
+                   "p-valeurs vs Minimum positive", 
+                   "Période de latence : 6 ans",
+                   "Cotes du minimum non nul",
+                   "Cotes des p-valeurs",
+                   "Source : IHME, Global Burden of Disease (2019); U.S. Environmental Protection Agency (2023)")
+dev.off()
 
+png("images/correlation_max_positive_latency_6.png")
 visualize_median(df, p_values, "max_nonzero", 
-                   "p-valeurs vs Maximum non nul", 
-                   "Log-cotes du maximum non nul",
-                   "Log-cotes des p-valeurs")
+                   "p-valeurs vs Maximum positive",
+                   "Période de latence : 6 ans",
+                   "Cotes du maximum positive",
+                   "Cotes des p-valeurs",
+                   "Source : IHME, Global Burden of Disease (2019); U.S. Environmental Protection Agency (2023)")
+dev.off()
 
+png("images/correlation_geom_mean_positive_latency_6.png")
 visualize_median(df, p_values, "geom_mean_nonzero", 
-                   "p-valeurs vs Moyenne géométrique non nulle", 
-                   "Log-cotes de la moyenne géométrique non nulle",
-                   "Log-cotes des p-valeurs")
+                   "p-valeurs vs Moyenne géométrique positive", 
+                   "Période de latence : 6 ans",
+                   "Cotes de la moyenne géométrique positive",
+                   "Cotes des p-valeurs", 
+                   "Source : IHME, Global Burden of Disease (2019); U.S. Environmental Protection Agency (2023)")
+dev.off()
 
-ggplot(p_values, aes(x=year, y=logit(p_value))) +
+png("images/correlation_year_latency_6.png")
+ggplot(p_values, aes(x=year, y=odds(p_value))) +
   geom_point(color="gray") +
   geom_smooth(color="black", method = MASS::rlm, formula=y~splines::bs(x, 3)) +
-  geom_hline(yintercept = log(0.05/(0.95)), linetype = "dashed", color="black") +
-  labs(title="Série chronologique des p-valeurs", x="Année", y="Logit des p-valeurs") +
+  scale_y_log10(breaks = scales::trans_breaks("log10", function(y) 10^y), labels = exp_label) + 
+  geom_hline(yintercept = 0.05, linetype = "dashed", color="black") +
+  labs(title="Série chronologique des p-valeurs", subtitle="Période de latence : 6 ans",
+ x="Année", y="Cotes des p-valeurs", caption= "Source : IHME, Global Burden of Disease (2019); U.S. Environmental Protection Agency (2023)") +
   theme_classic()
+dev.off()
+
+
+df %>% nrow()
+df %>% summary
+
 

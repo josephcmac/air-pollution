@@ -89,60 +89,36 @@ read_combination<- function(latency) {
   return(df)
 }
 
-df <- read_combination(6)
+odds <- function(x) {
+  x/(1-x)
+}
 
-png("images/gradiant_geom_mean_positive_latency_6.png")
-ggplot(df %>% na.omit(), aes(x=geom_mean_nonzero, y=Female)) +
-  geom_point(color="gray", alpha=0.5) +
-  geom_smooth(color="black", method='gam', formula=y~s(x, bs="cs")) +
-  scale_x_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), labels = exp_label) +
-  scale_y_log10(breaks = scales::trans_breaks("log10", function(y) 10^y), labels = exp_label) +
-  labs(title = "Moyenne géométrique non nulle vs Incidence chez les femmes",
-       subtitle = "Période de latence : 6 ans",
-       x = "Moyenne géométrique non nulle",
-       y = "Incidence chez les femmes",
-       caption = "Source : IHME, Global Burden of Disease (2019); U.S. Environmental Protection Agency (2023)") +
-  theme_classic()
+logit <- function(x) {
+  log(x/(1-x))
+}
+
+comp_p <- function(df) {
+  df0 <- df %>% na.omit()
+  cor.test(x=df0$geom_mean_nonzero, y=df0$Female, method="kendall", alternative="greater")$p.value
+}
+
+x <- 0:10
+y <- sapply(0:10, function(i) comp_p(read_combination(i)))
+
+
+png("images/ArsenicPM2.5LC_latence.png")
+data.frame(x,y) %>%
+  ggplot() +
+    geom_point(aes(x=x, y=odds(y))) +
+    geom_hline(yintercept=odds(0.05), linetype = "dashed", color="black") +
+    scale_x_continuous(breaks = function(x) seq(floor(min(x)), ceiling(max(x)), by = 1)) +
+    scale_y_log10(breaks = scales::trans_breaks("log10", function(y) 10^y), labels = exp_label) +
+    labs(title="Série chronologique des p-valeurs pour l'hypothèse d'une
+         corrélation de Kendall positive",
+         caption = "Source : IHME, Global Burden of Disease (2019); U.S. Environmental Protection Agency (2023)") +
+    xlab("Latence (Année)") +
+    ylab("Cotes des p-valeurs") +
+    theme_classic()
 dev.off()
 
-png("images/gradiant_min_positive_latency_6.png")
-ggplot(df %>% na.omit(), aes(x=min_nonzero, y=Female)) +
-  geom_point(color="gray", alpha=0.5) +
-  geom_smooth(color="black", method='gam', formula=y~s(x, bs="cs")) +
-  scale_x_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), labels = exp_label) +
-  scale_y_log10(breaks = scales::trans_breaks("log10", function(y) 10^y), labels = exp_label) +
-  labs(title = "Minimum non nul vs Incidence chez les femmes",
-       subtitle = "Période de latence : 6 ans",
-       x = "Minimum non nul",
-       y = "Incidence chez les femmes",
-       caption = "Source : IHME, Global Burden of Disease (2019); U.S. Environmental Protection Agency (2023)") +
-  theme_classic()
-dev.off()
-
-png("images/gradiant_max_positive_latency_6.png")
-ggplot(df %>% na.omit(), aes(x=max_nonzero, y=Female)) +
-  geom_point(color="gray", alpha=0.5) +
-  geom_smooth(color="black", method='gam', formula=y~s(x, bs="cs")) +
-  scale_x_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), labels = exp_label) +
-  scale_y_log10(breaks = scales::trans_breaks("log10", function(y) 10^y), labels = exp_label) +
-  labs(title = "Maximum non nul vs Incidence chez les femmes",
-       subtitle = "Période de latence : 6 ans",
-       x = "Maximum non nul",
-       y = "Incidence chez les femmes",
-       caption = "Source : IHME, Global Burden of Disease (2019); U.S. Environmental Protection Agency (2023)") +
-  theme_classic()
-dev.off()
-
-png("images/gradiant_positive_proportion_latency_6.png")
-ggplot(df, aes(x=positive_proportion, y=Female)) +
-  geom_point(color="gray", alpha=0.5) +
-  geom_smooth(color="black", method='gam', formula=y~s(x, bs="cs")) +
-  scale_y_log10(breaks = scales::trans_breaks("log10", function(y) 10^y), labels = exp_label) +
-  labs(title = "Proportion positive vs Incidence chez les femmes",
-       subtitle = "Période de latence : 6 ans",
-       x = "Proportion positive",
-       y = "Incidence chez les femmes",
-       caption = "Source : IHME, Global Burden of Disease (2019); U.S. Environmental Protection Agency (2023)") +
-  theme_classic()
-dev.off()
 

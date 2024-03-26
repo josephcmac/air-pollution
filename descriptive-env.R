@@ -67,44 +67,51 @@ summary(df)
 (mean( df$value > 0 )*100) %>% round(0)
 
 # Longitudinal study 
-df %>% 
-	mutate(year = floor_date(date, "year") %>% year %>% sapply(function(x) 10*round(x/10))) %>%
-	filter(value > 0) %>%
-	ggplot()  +
-	geom_boxplot(aes(x=as.factor(year), y=value)) +
-	scale_y_log10(breaks = trans_breaks("log10", function(y) 10^y), labels = exp_label) +
-	labs(title = "Diagrammes de moustache pour une durée de 10 ans",
-	     x = "Année",
-	     y = "Valeurs positives") +
-	theme_classic() +
-	facet_wrap(~location, ncol=6)
 
+png("images/smooth_env.png", width=600, height=1000)
 df %>% 
 	ggplot(aes(x=date, y=value))   +
 	geom_smooth(color="black", method = 'gam', formula = y ~ s(x, bs = "cs")) +
 	labs(title = "Concentration (lissée) d'arsenic PM2,5 LC",
 	     x = "Année",
-	     y = "Valeurs") +
+	     y = "Valeurs",
+	     caption = "Source : U.S. Environmental Protection Agency (2023)") +
 	theme_classic() +
 	facet_wrap(~location, ncol=6)
+dev.off()
 
-
+png("images/smooth_env_positive.png", width=600, height=1000)
 df %>% 
 	filter(value > 0) %>%
 	ggplot(aes(x=date, y=value))   +
 	geom_smooth(color="black", method = 'gam', formula = y ~ s(x, bs = "cs")) +
 	labs(title = "Concentration (lissée) des valeurs positives d'arsenic PM2,5 LC",
 	     x = "Année",
-	     y = "Valeurs Positives") +
+	     y = "Valeurs Positives",
+	     caption = "Source : U.S. Environmental Protection Agency (2023)") +
 	scale_y_log10(breaks = trans_breaks("log10", function(y) 10^y), labels = exp_label) +
 	theme_classic() +
 	facet_wrap(~location, ncol=6)
+dev.off()
 
+png("images/boxplot_env_positive.png", width=1200, height=1000)
+df %>% 
+	mutate(year = floor_date(date, "year") %>% year %>% sapply(function(x) 6*round(x/6))) %>%
+	filter(value > 0) %>%
+	ggplot()  +
+	geom_boxplot(aes(x=as.factor(year), y=value)) +
+	scale_y_log10(breaks = trans_breaks("log10", function(y) 10^y), labels = exp_label) +
+	labs(title = "Diagrammes de moustache pour une durée de 6 ans",
+	     x = "Année",
+	     y = "Valeurs positives",
+	     caption = "Source : U.S. Environmental Protection Agency (2023)") +
+	theme_classic() +
+	facet_wrap(~location, ncol=6)
+dev.off()
 
 ########################
 # Macroscopic Analysis #
 ########################
-
 df_yearly <- df %>%
   mutate(year = floor_date(date, "year") %>% year) %>% 
   group_by(year, location) %>%
@@ -120,38 +127,45 @@ summary(df_yearly)
 
 
 # Longitudinal study
-
+png("images/positive_proportion_env.png", width=600, height=1000)
 ggplot(df_yearly, aes(year, positive_proportion)) + 
 	geom_point(color="gray") +
        	geom_line(color ="black") +
 	labs(title = "Série chronologique de proportion de valeurs positives",
 	     x = "Année",
-	     y = "Proportion de valeurs positives") +
+	     y = "Proportion de valeurs positives",
+	     caption = "Source : U.S. Environmental Protection Agency (2023)") +
 	theme_classic() +
 	facet_wrap(~location, ncol = 6)
+dev.off()
 
+png("images/min_max_env.png", width=600, height=1000)
 ggplot(df_yearly %>% na.omit) + 
 	geom_point(color="gray", aes(year, max_nonzero)) +
 	geom_point(color="gray", aes(year, min_nonzero)) +
        	geom_line(color ="black", aes(year, max_nonzero)) +
        	geom_line(color ="black", aes(year, min_nonzero)) +
 	scale_y_log10(breaks = trans_breaks("log10", function(y) 10^y), labels = exp_label) +
-	labs(title = "Série chronologique de valeur positive maximale/minimale",
+	labs(title = "Série chronologique de valeur positive maximale/minimale positive",
 		x = "Année",
-		y = "Valeur positive maximale/minimale") +
+		y = "Valeur positive maximale/minimale positive",
+		caption = "Source : U.S. Environmental Protection Agency (2023)") +
 	theme_classic() +
 	facet_wrap(~location, ncol = 6)
+dev.off()
 
+png("images/geom_mean_env.png", width=600, height=1000)
 ggplot(df_yearly %>% na.omit) + 
 	geom_point(color="gray", aes(year, geom_mean_nonzero)) +
        	geom_line(color ="black", aes(year, geom_mean_nonzero)) +
 	scale_y_log10(breaks = trans_breaks("log10", function(y) 10^y), labels = exp_label) +
-	labs(title = "Série chronologique moyenne géométrique",
+	labs(title = "Série chronologique moyenne géométrique positive",
 		x = "Année",
-		y = "Moyenne géométrique") +
+		y = "Moyenne géométrique positive",
+		caption = "Source : U.S. Environmental Protection Agency (2023)") +
 	theme_classic() +
 	facet_wrap(~location, ncol = 6)
-
+dev.off()
 
 
 
